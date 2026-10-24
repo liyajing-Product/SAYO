@@ -1,0 +1,8 @@
+# Rename to .gitignore when using Git locally
+.DS_Store
+.vercel/
+.openai/
+.env
+.env.*
+!.env.example
+node_modules/
