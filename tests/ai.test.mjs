@@ -17,7 +17,7 @@ test('feedback evidence can only quote real user messages',()=>{
 });
 test('provider configuration never accepts browser supplied destinations or local addresses',()=>{
  assert.throws(()=>resolveConfig({}));assert.throws(()=>resolveConfig({AI_API_KEY:'fake',AI_BASE_URL:'http://127.0.0.1'}));assert.throws(()=>resolveConfig({AI_API_KEY:'fake',AI_BASE_URL:'https://localhost'}));
- assert.equal(resolveConfig({AI_API_KEY:'server-key'},'session-key').key,'session-key');
+ assert.equal(resolveConfig({AI_API_KEY:'server-key'},{useDefault:false,apiKey:'session-key'}).key,'session-key');
 });
 test('real adapter sends JSON request and maps invalid credentials without leaking secrets',async()=>{
  const input=validateInput(base);let request;
@@ -42,7 +42,8 @@ test('both scenes pass through all AI actions with the supplied context',async()
  const outputs={extract:{fields:{existing:'A任务明天交',added:'B任务明天交',constraint:'需2天只剩1天',original:'',goal:'确认优先级'},questions:[]},expression:{parts:['对齐目的','说明事实','确认请求'],tip:'先核对事实'},roleplay:{reply:'你希望我确认什么？'},hint:{reply:'想请您确认优先级'},feedback:{summary:'请求清楚',improved:'想请您确认安排',items:[{label:'事实',observation:'有回应',suggestion:'补充事实',messageIndex:0},{label:'请求',observation:'有请求',suggestion:'补充范围',messageIndex:0}]},connect:{ok:true}};
  const seen=[];const worker=createWorker({},async(url,options)=>{const request=JSON.parse(options.body);const context=JSON.parse(request.messages[1].content);seen.push(context);return json({choices:[{message:{content:JSON.stringify(outputs[context.action])},finish_reason:'stop'}]});});
  for(const scene of ['conflict','unclear'])for(const action of Object.keys(outputs)){
-  const response=await worker.fetch(new Request('https://site.test/api/ai',{method:'POST',headers:{'content-type':'application/json','x-session-api-key':'test-key'},body:JSON.stringify({...base,scene,action,transcript:[{role:'user',text:'我的回应'}]})}));assert.equal(response.status,200,scene+' '+action);assert.ok((await response.json()).data);
+  const clientConfig={useDefault:false,apiKey:'test-key',baseUrl:'https://api.deepseek.com',model:'deepseek-flash'};
+  const response=await worker.fetch(new Request('https://site.test/api/ai',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({...base,scene,action,clientConfig,transcript:[{role:'user',text:'我的回应'}]})}));assert.equal(response.status,200,scene+' '+action);assert.ok((await response.json()).data);
  }
  assert.equal(seen.length,12);
 });
